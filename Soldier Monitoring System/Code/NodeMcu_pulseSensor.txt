@@ -1,0 +1,235 @@
+#Working code for BPM-php (localhost)
+
+<?php
+class bpmsensor{
+ public $link='';
+ function __construct($bpm){
+  $this->connect();
+  
+
+  $this->storeInDB($bpm);
+ }
+ 
+ function connect(){
+  $this->link = mysqli_connect('localhost','root','','pulsedb') or die('Cannot connect to the DB');
+ 
+ }
+ 
+ function storeInDB($bpm){
+  $query = "insert into pulsesensor set bpm='".$bpm."'";
+  $result = mysqli_query($this->link,$query) or die('Errant query:  '.$query);
+ }
+ 
+}
+if(!empty($_GET['bpm'])){
+$Bpmsensor=new bpmsensor($_GET['bpm']);
+}
+?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Working code for BPM (Localhost)
+
+#define pulsePin A0
+
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+#include <ESP8266HTTPClient.h>
+#define USE_SERIAL Serial
+ESP8266WiFiMulti WiFiMulti;
+
+int rate[10];                    
+unsigned long sampleCounter = 0; 
+unsigned long lastBeatTime = 0;  
+unsigned long lastTime = 0, N;
+int BPM = 0; 
+int IBI = 0;
+int P = 512;
+int T = 512;
+int thresh = 512;  
+int amp = 100;                   
+int Signal;
+boolean Pulse = false;
+boolean firstBeat = true;          
+boolean secondBeat = true;
+boolean QS = false;    
+
+void setup() {
+  
+//  WiFi.begin(ssid, password);
+//  Serial.begin(115200);
+//  while (WiFi.status() != WL_CONNECTED) {
+//    Serial.print(".");
+//    delay(500);
+//  }
+//
+//  while (!Serial);  
+//delay(100);
+//Serial.println("\n\n BPM WiFi Connectivity");
+
+USE_SERIAL.begin(115200);
+   // USE_SERIAL.setDebugOutput(true);
+
+    USE_SERIAL.println();
+    USE_SERIAL.println();
+    USE_SERIAL.println();
+
+    for(uint8_t t = 4; t > 0; t--) {
+        USE_SERIAL.printf("[SETUP] WAIT %d...\n", t);
+        USE_SERIAL.flush();
+        delay(1000);
+    }
+
+    WiFiMulti.addAP("pay&get", "nahimilega");         //wifiname , password , 
+
+
+}
+
+void loop() {
+
+  if (QS == true) {
+
+    connect_to_wifi(BPM);
+   Serial.println("BPM: "+ String(BPM));
+   QS = false;
+   } else if (millis() >= (lastTime + 2)) {
+     readPulse(); 
+     lastTime = millis();
+   }     
+}
+
+
+
+void readPulse() {
+
+  Signal = analogRead(pulsePin);              
+  sampleCounter += 2;                           
+  int N = sampleCounter - lastBeatTime;   
+
+  detectSetHighLow();
+
+  if (N > 250) {  
+    if ( (Signal > thresh) && (Pulse == false) && (N > (IBI / 5) * 3) )
+      pulseDetected();
+  }
+
+  if (Signal < thresh && Pulse == true) {  
+    Pulse = false;
+    amp = P - T;
+    thresh = amp / 2 + T;  
+    P = thresh;
+    T = thresh;
+  }
+
+  if (N > 2500) {
+    thresh = 512;
+    P = 512;
+    T = 512;
+    lastBeatTime = sampleCounter;
+    firstBeat = true;            
+    secondBeat = true;           
+  }
+
+}
+
+void detectSetHighLow() {
+
+  if (Signal < thresh && N > (IBI / 5) * 3) {
+    if (Signal < T) {                       
+      T = Signal;                         
+    }
+  }
+
+  if (Signal > thresh && Signal > P) {    
+    P = Signal;                           
+  }                                       
+
+}
+
+void pulseDetected() {
+  Pulse = true;                           
+  IBI = sampleCounter - lastBeatTime;     
+  lastBeatTime = sampleCounter;           
+
+  if (firstBeat) {                       
+    firstBeat = false;                 
+    return;                            
+  }
+  if (secondBeat) {                    
+    secondBeat = false;                
+    for (int i = 0; i <= 9; i++) {   
+      rate[i] = IBI;
+    }
+  }
+
+  word runningTotal = 0;                   
+
+  for (int i = 0; i <= 8; i++) {          
+    rate[i] = rate[i + 1];            
+    runningTotal += rate[i];          
+  }
+
+  rate[9] = IBI;                      
+  runningTotal += rate[9];            
+  runningTotal /= 10;                 
+  BPM = 60000 / runningTotal;         
+  QS = true;
+                                
+}
+
+int connect_to_wifi(int bpm){
+
+      if((WiFiMulti.run() == WL_CONNECTED)) {
+
+        HTTPClient http;
+
+        USE_SERIAL.print("[HTTP] begin...\n");
+        // configure traged server and url
+        //http.begin("https://192.168.1.12/test.html", "7a 9c f4 db 40 d3 62 5a 6e 21 bc 5c cc 66 c8 3e a1 45 59 38"); //HTTPS
+        http.begin("http://192.168.43.219/bpm.php?bpm=" +String(bpm)); //HTTP
+//        http.begin("http://192.168.43.219/bpm.php?bpm=28"); //HTTP
+
+        USE_SERIAL.print("[HTTP] GET...\n");
+        // start connection and send HTTP header
+        int httpCode = http.GET();
+
+        // httpCode will be negative on error
+        if(httpCode > 0) {
+            // HTTP header has been send and Server response header has been handled
+            USE_SERIAL.printf("[HTTP] GET... code: %d\n", httpCode);
+
+            // file found at server
+            if(httpCode == HTTP_CODE_OK) {
+                String payload = http.getString();
+                USE_SERIAL.println(payload);
+            }
+        } else {
+            USE_SERIAL.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+        }
+
+        http.end();
+    }
+
+    delay(10000);
+
+ 
+  }
