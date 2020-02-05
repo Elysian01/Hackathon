@@ -1,0 +1,3 @@
+[submodule "AgroCraft-PHP"]
+	path = AgroCraft-PHP
+	url = https://github.com/FriendsUnited/AgroCraft-PHP.git
