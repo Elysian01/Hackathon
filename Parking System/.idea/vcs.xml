@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Automatic-Parking-Management" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/MapView" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Number-Plate/OpenCV_3_KNN_Character_Recognition_Python" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Number-Plate/OpenCV_3_License_Plate_Recognition_Python" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/detectParking" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/invictus" vcs="Git" />
+  </component>
+</project>
