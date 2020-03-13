@@ -2,7 +2,7 @@
 #include <PulseSensorPlayground.h>
 #include <SoftwareSerial.h>
 SoftwareSerial BTserial(0, 1); 
-SoftwareSerial mySerial(9, 10);
+SoftwareSerial mySerial(9, 10); //gsm
 PulseSensorPlayground pulsesensor;
 
 // Pins
